@@ -3,6 +3,7 @@ package io.mitcon84.aicontext.actions
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.ui.Messages
 import io.mitcon84.aicontext.context.ContextItem
 import io.mitcon84.aicontext.context.ContextStorageService
@@ -34,18 +35,20 @@ class AddSelectionToContextAction : AnAction() {
             endLine = endLine
         )
 
-        ContextStorageService.getInstance(project).addItem(item, buildSuccessMessage(virtualFile?.name, startLine, endLine))
+        ContextStorageService.getInstance(project).addOrMergeItem(item) { mergedStartLine, mergedEndLine ->
+            extractLineRange(editor.document, mergedStartLine, mergedEndLine)
+        }
     }
 
     override fun update(event: AnActionEvent) {
         event.presentation.isEnabledAndVisible = event.getData(CommonDataKeys.EDITOR) != null
     }
 
-    private fun buildSuccessMessage(fileName: String?, startLine: Int, endLine: Int): String {
-        return if (fileName.isNullOrBlank()) {
-            "Selection added to AI context."
-        } else {
-            "Added selection: $fileName lines $startLine-$endLine"
-        }
+    private fun extractLineRange(document: Document, startLine: Int, endLine: Int): String {
+        val startLineIndex = (startLine - 1).coerceIn(0, document.lineCount - 1)
+        val endLineIndex = (endLine - 1).coerceIn(startLineIndex, document.lineCount - 1)
+        val startOffset = document.getLineStartOffset(startLineIndex)
+        val endOffset = document.getLineEndOffset(endLineIndex)
+        return document.getText(com.intellij.openapi.util.TextRange(startOffset, endOffset))
     }
 }

@@ -28,6 +28,9 @@
                 id="AI Context"
                 anchor="right"
                 factoryClass="io.mitcon84.aicontext.ui.AiContextToolWindowFactory"/>
+        <applicationConfigurable
+                parentId="tools"
+                instance="io.mitcon84.aicontext.settings.AiSettingsConfigurable"/>
     </extensions>
 
     <actions>

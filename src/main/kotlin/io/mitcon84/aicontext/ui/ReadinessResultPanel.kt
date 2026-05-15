@@ -17,11 +17,14 @@ class ReadinessResultPanel : JPanel(BorderLayout()) {
         lineWrap = true
         wrapStyleWord = true
         text = "No AI readiness check has been run yet."
+        UiComponentStyling.styleTextArea(this)
     }
 
     init {
         border = BorderFactory.createTitledBorder("AI Result")
-        add(JScrollPane(textArea), BorderLayout.CENTER)
+        add(JScrollPane(textArea).apply {
+            UiComponentStyling.styleScrollPane(this, preferredHeight = 180)
+        }, BorderLayout.CENTER)
         add(
             JPanel(FlowLayout(FlowLayout.LEFT)).apply {
                 add(JButton("Copy Readiness Report").apply {

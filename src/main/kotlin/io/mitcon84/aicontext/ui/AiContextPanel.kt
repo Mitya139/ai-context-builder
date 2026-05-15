@@ -33,12 +33,16 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     private val userTaskArea = JTextArea(3, 40).apply {
         lineWrap = true
         wrapStyleWord = true
+        UiComponentStyling.styleTextArea(this)
     }
     private val summaryLabel = JLabel()
     private val checkReadinessButton = JButton("Check Context Readiness")
-    private val contextListPanel = ContextListPanel(
-        onCopyItem = { item -> copyItem(item) },
-        onRemoveItem = { item -> removeItem(item) }
+    private val detailsPanel = ContextItemDetailsPanel(
+        onCopySelectedItem = { item -> copyItem(item) },
+        onRemoveSelectedItem = { item -> removeItem(item) }
+    )
+    private val contextListPanel = ContextItemListPanel(
+        onSelectionChanged = { item -> detailsPanel.render(item) }
     )
     private val readinessResultPanel = ReadinessResultPanel()
     private val storageListener: () -> Unit = {
@@ -67,18 +71,28 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
         val topPanel = JPanel(BorderLayout()).apply {
             add(JScrollPane(userTaskArea).apply {
                 border = BorderFactory.createTitledBorder("User Task")
+                UiComponentStyling.styleScrollPane(this)
             }, BorderLayout.CENTER)
             add(summaryLabel, BorderLayout.SOUTH)
         }
 
         val contextPanel = JPanel(BorderLayout()).apply {
             border = BorderFactory.createTitledBorder("Context Items")
-            add(JScrollPane(contextListPanel), BorderLayout.CENTER)
+            add(contextListPanel, BorderLayout.CENTER)
+        }
+
+        val contextAndDetailsPane = JSplitPane(
+            JSplitPane.VERTICAL_SPLIT,
+            contextPanel,
+            detailsPanel
+        ).apply {
+            resizeWeight = 0.30
+            isContinuousLayout = true
         }
 
         val splitPane = JSplitPane(
             JSplitPane.VERTICAL_SPLIT,
-            contextPanel,
+            contextAndDetailsPane,
             readinessResultPanel
         ).apply {
             resizeWeight = 0.65
@@ -125,14 +139,14 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     }
 
     private fun removeItem(item: ContextItem) {
-        storage.removeItem(item.id, "Removed context item.")
+        storage.removeItem(item.id)
     }
 
     private fun clearContext() {
         if (storage.getItems().isEmpty()) {
             refresh("Context is already empty.")
         } else {
-            storage.clear("Context cleared.")
+            storage.clear("Cleared all context items.")
             readinessResultPanel.clear()
         }
     }
@@ -148,7 +162,7 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
             val result = runCatching {
                 val outline = projectOutlineProvider.collect(project)
                 val prompt = readinessPromptBuilder.build(userTask, items, outline)
-                val clientSelection = aiClientFactory.createFromEnvironment()
+                val clientSelection = aiClientFactory.createFromSettings()
                 val report = clientSelection.client.complete(prompt)
                 ReadinessResult(
                     report = if (clientSelection.statusMessage == null) {
@@ -183,8 +197,8 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     private fun buildSummary(items: List<ContextItem>, statusMessage: String?): String {
         val totalChars = items.sumOf { it.selectedText.length }
         val approxTokens = approxTokens(totalChars)
-        val summary = "Items: ${items.size} - Characters: ${formatNumber(totalChars)} - Approx tokens: ${formatNumber(approxTokens)}"
-        return if (statusMessage.isNullOrBlank()) summary else "$summary - $statusMessage"
+        val status = statusMessage?.takeIf { it.isNotBlank() } ?: "Idle"
+        return "Items: ${items.size} - Characters: ${formatNumber(totalChars)} - Approx tokens: ${formatNumber(approxTokens)} - Status: $status"
     }
 
     private fun approxTokens(chars: Int): Int = if (chars == 0) 0 else (chars + 3) / 4

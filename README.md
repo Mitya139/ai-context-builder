@@ -1,34 +1,33 @@
 # AI Context Builder
 
-AI Context Builder is a small IntelliJ Platform plugin that helps developers prepare focused, high-quality IDE context for AI coding agents.
+AI Context Builder is a small IntelliJ Platform plugin for preparing focused, high-quality IDE context for AI coding agents.
 
-Instead of attaching entire files or guessing what the AI needs, the plugin lets you collect exact code snippets, inspect them, write a task, and run an AI-powered context readiness check.
-
-The readiness check uses the selected snippets plus a lightweight project outline to estimate whether the current context is ready, partial, or insufficient for the task.
+Instead of attaching entire files or guessing what the AI needs, the plugin lets you collect exact code snippets, merge overlapping selections, inspect the final context, write a task, and run an AI-powered context readiness check.
 
 ## Motivation
 
-AI coding agents often fail because the prompt has the wrong context: too little code, too much noise, or missing adjacent files. This plugin focuses on context quality before the prompt leaves the IDE.
+AI coding agents often fail because the prompt has the wrong context: too little code, too much noise, or missing adjacent files. AI Context Builder focuses on context quality before the prompt leaves the IDE.
 
 ## Features
 
-- Add selected code from the editor popup
-- Inspect collected snippets as collapsible context items
-- Copy or remove individual context items
+- Add focused code snippets from the editor popup
+- Automatically merge overlapping, adjacent, or duplicate selections from the same file
+- Inspect collected context in a compact master-detail UI
+- Copy or remove the selected context item
 - Preserve file path, language, and selected line range
-- Enter a user task for the AI agent
-- Copy a full Markdown AI prompt
-- Copy raw IDE context without instructions
-- Display rough context size and token estimates
-- Run an AI Context Readiness Check
-- Fall back to a mock readiness report when no API key is configured
+- Write a user task directly in the Tool Window
+- Copy a full Markdown prompt for an external AI coding agent
+- Copy raw IDE context without extra instructions
+- Run an AI-powered Context Readiness Check
+- Configure OpenAI-compatible access in IDE Settings
+- Fall back to a mock AI client when API settings are missing
 
 ## How It Works
 
 1. Select code in the editor.
 2. Right-click and choose **Add Selection to AI Context**.
 3. Open the **AI Context** Tool Window.
-4. Review the collected snippets.
+4. Review the compact context list and selected item details.
 5. Enter the task for the AI agent.
 6. Click **Check Context Readiness** to estimate whether the context is enough.
 7. Click **Copy Prompt** and paste it into your preferred AI coding assistant.
@@ -45,37 +44,51 @@ It does not send full project contents. Missing context suggestions are candidat
 
 ## Configuration
 
-The current MVP reads AI configuration from environment variables:
+Open:
 
 ```text
-OPENAI_API_KEY   required for real AI readiness checks
-OPENAI_BASE_URL  optional, default https://api.openai.com
-OPENAI_MODEL     optional, default gpt-4.1-mini
+Settings / Preferences -> Tools -> AI Context Builder
 ```
 
-If `OPENAI_API_KEY` is not set, the plugin uses a mock AI client so the UI can still be tested.
+Available fields:
+
+- **Provider**: OpenAI-compatible
+- **Base URL**: defaults to `https://api.openai.com`
+- **Model**: defaults to `gpt-4.1-mini`
+- **API Key**: stored through IntelliJ PasswordSafe, not in the normal persistent settings file
+- **Use mock AI client only**: useful for demos and offline testing
+
+If no API key is configured in Settings, the plugin falls back to the mock AI client. Environment variables remain as a compatibility fallback:
+
+```text
+OPENAI_API_KEY
+OPENAI_BASE_URL
+OPENAI_MODEL
+```
+
+Settings values take precedence over environment variables.
 
 ## Architecture
 
-Editor Action -> Project Service -> Prompt Builder -> Tool Window -> Clipboard
+Editor Action -> Context Storage Service -> Merge Decider -> Prompt Builder -> Tool Window -> Clipboard
 
 Readiness Check -> Project Outline Provider -> Readiness Prompt Builder -> AI Client -> Result Panel
+
+Settings -> Persistent State Service -> PasswordSafe API Key Store -> AI Client Factory
 
 ## Current Limitations
 
 - Context is stored only in memory.
-- The plugin does not send full project contents to the LLM.
+- The plugin does not send full project contents to the AI.
 - Missing context suggestions are candidate suggestions based on selected snippets, project file paths, and the user task.
-- The plugin does not modify source code.
+- The plugin does not edit source code.
 - The plugin is not a full AI chat assistant.
-- The current MVP reads API configuration from environment variables rather than a settings UI.
 - No PSI-based symbol extraction yet.
 - No Git diff support yet.
 
 ## Future Ideas
 
-- Add suggested files to context directly from the readiness report
-- Add IntelliJ PasswordSafe-based settings
-- Add PSI-based symbol names for selected snippets
-- Add Git diff review for AI-generated changes
+- Add suggested files directly from readiness results
+- Add PSI-derived symbol names to context items
+- Add AI review for generated diffs
 - Add test failure / stacktrace triage
