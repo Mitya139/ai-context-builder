@@ -43,12 +43,43 @@ class PromptBuilderTest {
         assertTrue(prompt.contains("No context items were added."))
     }
 
+    @Test
+    fun `includes line range when available`() {
+        val prompt = builder.build(listOf(sampleItem(startLine = 10, endLine = 16)))
+
+        assertTrue(prompt.contains("- Lines: `10-16`"))
+    }
+
+    @Test
+    fun `omits line range when unavailable`() {
+        val prompt = builder.build(listOf(sampleItem(startLine = null, endLine = null)))
+
+        assertFalse(prompt.contains("- Lines:"))
+    }
+
+    @Test
+    fun `builds raw context with selected code`() {
+        val rawContext = builder.buildRawContext(listOf(sampleItem()))
+
+        assertTrue(rawContext.contains("# Raw IDE Context"))
+        assertTrue(rawContext.contains("## Item 1"))
+        assertTrue(rawContext.contains("src/main/kotlin/App.kt"))
+        assertTrue(rawContext.contains("- Lines: `10-16`"))
+        assertTrue(rawContext.contains("fun main()"))
+        assertFalse(rawContext.contains("## Instructions"))
+    }
+
     private fun sampleItem(): ContextItem =
+        sampleItem(startLine = 10, endLine = 16)
+
+    private fun sampleItem(startLine: Int?, endLine: Int?): ContextItem =
         ContextItem(
             projectName = "DemoProject",
             filePath = "src/main/kotlin/App.kt",
             language = "Kotlin",
             selectedText = "fun main() {\n    println(\"Hello\")\n}",
+            startLine = startLine,
+            endLine = endLine,
             addedAt = LocalDateTime.of(2026, 5, 15, 12, 0)
         )
 }

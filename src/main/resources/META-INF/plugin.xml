@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
-    <id>io.mitcon84.ai-context-builder</id>
+    <id>io.mitcon84.aicontextbuilder</id>
 
     <!-- Public plugin name should be written in Title Case.
      Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
@@ -32,7 +32,7 @@
 
     <actions>
         <action
-                id="io.mitcon84.aicontext.actions.AddSelectionToContextAction"
+                id="io.mitcon84.aicontext.addSelectionToContext"
                 class="io.mitcon84.aicontext.actions.AddSelectionToContextAction"
                 text="Add Selection to AI Context"
                 description="Add selected code to AI coding agent context">

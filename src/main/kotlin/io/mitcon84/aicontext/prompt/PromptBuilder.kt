@@ -31,6 +31,7 @@ class PromptBuilder {
                     appendLine("- Project: `${item.projectName}`")
                     appendLine("- File: `${item.filePath}`")
                     appendLine("- Language: `${item.language}`")
+                    lineRange(item)?.let { appendLine("- Lines: `$it`") }
                     appendLine()
                     appendLine("```text")
                     appendLine(item.selectedText.trim())
@@ -46,5 +47,39 @@ class PromptBuilder {
             appendLine("- Explain the reasoning briefly.")
             appendLine("- If code changes are needed, show the exact files and snippets to modify.")
         }
+    }
+
+    fun buildRawContext(items: List<ContextItem>): String {
+        return buildString {
+            appendLine("# Raw IDE Context")
+            appendLine()
+
+            if (items.isEmpty()) {
+                appendLine("No context items were added.")
+                return@buildString
+            }
+
+            items.forEachIndexed { index, item ->
+                appendLine("## Item ${index + 1}")
+                appendLine()
+                appendLine("- Project: `${item.projectName}`")
+                appendLine("- File: `${item.filePath}`")
+                appendLine("- Language: `${item.language}`")
+                lineRange(item)?.let { appendLine("- Lines: `$it`") }
+                appendLine()
+                appendLine("```text")
+                appendLine(item.selectedText.trim())
+                appendLine("```")
+                if (index != items.lastIndex) {
+                    appendLine()
+                }
+            }
+        }
+    }
+
+    private fun lineRange(item: ContextItem): String? {
+        val startLine = item.startLine ?: return null
+        val endLine = item.endLine ?: return null
+        return "$startLine-$endLine"
     }
 }

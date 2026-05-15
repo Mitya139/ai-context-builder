@@ -7,5 +7,7 @@ data class ContextItem(
     val filePath: String,
     val language: String,
     val selectedText: String,
+    val startLine: Int? = null,
+    val endLine: Int? = null,
     val addedAt: LocalDateTime = LocalDateTime.now()
 )
