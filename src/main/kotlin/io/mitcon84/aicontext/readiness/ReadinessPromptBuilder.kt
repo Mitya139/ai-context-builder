@@ -32,9 +32,7 @@ class ReadinessPromptBuilder {
                     lineRange(item)?.let { appendLine("- Lines: `$it`") }
                     appendLine("- Language: `${item.language}`")
                     appendLine()
-                    appendLine("```text")
-                    appendLine(item.selectedText.trim())
-                    appendLine("```")
+                    appendCodeBlock(item.selectedText)
                     appendLine()
                 }
             }
@@ -84,6 +82,15 @@ class ReadinessPromptBuilder {
             appendLine("## Suggested Next Step")
             appendLine("...")
         }
+    }
+
+    private fun StringBuilder.appendCodeBlock(text: String) {
+        appendLine("```text")
+        append(text)
+        if (!text.endsWith("\n") && !text.endsWith("\r")) {
+            appendLine()
+        }
+        appendLine("```")
     }
 
     private fun lineRange(item: ContextItem): String? {

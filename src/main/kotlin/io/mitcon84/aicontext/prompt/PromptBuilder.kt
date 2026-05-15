@@ -33,9 +33,7 @@ class PromptBuilder {
                     appendLine("- Language: `${item.language}`")
                     lineRange(item)?.let { appendLine("- Lines: `$it`") }
                     appendLine()
-                    appendLine("```text")
-                    appendLine(item.selectedText.trim())
-                    appendLine("```")
+                    appendCodeBlock(item.selectedText)
                     appendLine()
                 }
             }
@@ -67,9 +65,7 @@ class PromptBuilder {
                 appendLine("- Language: `${item.language}`")
                 lineRange(item)?.let { appendLine("- Lines: `$it`") }
                 appendLine()
-                appendLine("```text")
-                appendLine(item.selectedText.trim())
-                appendLine("```")
+                appendCodeBlock(item.selectedText)
                 if (index != items.lastIndex) {
                     appendLine()
                 }
@@ -86,10 +82,17 @@ class PromptBuilder {
             lineRange(item)?.let { appendLine("- Lines: `$it`") }
             appendLine("- Language: `${item.language}`")
             appendLine()
-            appendLine("```text")
-            appendLine(item.selectedText.trim())
-            appendLine("```")
+            appendCodeBlock(item.selectedText)
         }
+    }
+
+    private fun StringBuilder.appendCodeBlock(text: String) {
+        appendLine("```text")
+        append(text)
+        if (!text.endsWith("\n") && !text.endsWith("\r")) {
+            appendLine()
+        }
+        appendLine("```")
     }
 
     private fun lineRange(item: ContextItem): String? {

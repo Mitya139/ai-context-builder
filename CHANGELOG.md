@@ -1,5 +1,5 @@
-<!-- Keep a Changelog guide -> https://keepachangelog.com -->
-
-# Ai-context-builder Changelog
+# Changelog
 
 ## [Unreleased]
+
+- Initial implementation of AI Context Builder.

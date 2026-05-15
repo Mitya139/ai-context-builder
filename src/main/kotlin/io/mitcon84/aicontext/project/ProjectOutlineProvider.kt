@@ -1,5 +1,6 @@
 package io.mitcon84.aicontext.project
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import java.nio.file.Path
@@ -31,7 +32,7 @@ class ProjectOutlineProvider(
 
     private fun collectFromProjectModel(project: Project, maxFiles: Int): ProjectOutline? {
         val basePath = project.basePath ?: return null
-        return runCatching {
+        return try {
             val fileIndex = ProjectRootManager.getInstance(project).fileIndex
             val files = mutableListOf<String>()
             var truncated = false
@@ -61,6 +62,13 @@ class ProjectOutlineProvider(
                 files = files.sorted(),
                 truncated = truncated
             )
-        }.getOrNull()
+        } catch (exception: Exception) {
+            LOG.warn("Failed to collect project outline from IntelliJ project model. Falling back to filesystem scan.", exception)
+            null
+        }
+    }
+
+    private companion object {
+        val LOG: Logger = Logger.getInstance(ProjectOutlineProvider::class.java)
     }
 }

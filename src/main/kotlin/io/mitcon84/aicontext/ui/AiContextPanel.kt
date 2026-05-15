@@ -1,7 +1,11 @@
 package io.mitcon84.aicontext.ui
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.mitcon84.aicontext.context.ContextItem
 import io.mitcon84.aicontext.context.ContextStorageService
@@ -154,17 +158,36 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
         checkReadinessButton.isEnabled = false
         readinessResultPanel.setLoading("Checking context readiness...")
 
-        ApplicationManager.getApplication().executeOnPooledThread {
-            val result = readinessCheckRunner.check(project, userTask, items)
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(project, "Checking AI Context Readiness", true) {
+                override fun run(indicator: ProgressIndicator) {
+                    indicator.text = "Collecting project outline and asking AI provider..."
+                    val result = readinessCheckRunner.check(project, userTask, items)
+                    indicator.checkCanceled()
 
-            ApplicationManager.getApplication().invokeLater {
-                checkReadinessButton.isEnabled = true
-                when (result) {
-                    is ReadinessCheckResult.Failure -> readinessResultPanel.setError(result.message)
-                    is ReadinessCheckResult.Success -> readinessResultPanel.setResult(result.report)
+                    ApplicationManager.getApplication().invokeLater({
+                        if (project.isDisposed || !isDisplayable) {
+                            return@invokeLater
+                        }
+
+                        checkReadinessButton.isEnabled = true
+                        when (result) {
+                            is ReadinessCheckResult.Failure -> readinessResultPanel.setError(result.message)
+                            is ReadinessCheckResult.Success -> readinessResultPanel.setResult(result.report)
+                        }
+                    }, ModalityState.defaultModalityState())
+                }
+
+                override fun onCancel() {
+                    if (project.isDisposed || !isDisplayable) {
+                        return
+                    }
+
+                    checkReadinessButton.isEnabled = true
+                    readinessResultPanel.setError("AI readiness check was cancelled.")
                 }
             }
-        }
+        )
     }
 
     private fun buildSummary(items: List<ContextItem>, statusMessage: String?): String {

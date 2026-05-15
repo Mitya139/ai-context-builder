@@ -1,49 +1,31 @@
 # AI Context Builder
 
-AI Context Builder is a small IntelliJ Platform plugin for preparing focused, high-quality IDE context for AI coding agents.
+AI Context Builder is a small IntelliJ Platform plugin for collecting focused IDE context for external AI coding agents.
 
-Instead of attaching entire files or guessing what the AI needs, the plugin lets you collect exact code snippets, merge overlapping selections, inspect the final context, write a task, and run an AI-powered context readiness check.
+The plugin lets a developer add selected code or the current file from the editor, inspect the collected snippets in a Tool Window, write a task, copy a structured Markdown prompt, and optionally run an AI-based context readiness check.
 
-## Motivation
+## Main Capabilities
 
-AI coding agents often fail because the prompt has the wrong context: too little code, too much noise, or missing adjacent files. AI Context Builder focuses on context quality before the prompt leaves the IDE.
+- Add selected editor code to AI context.
+- Add the current file without manually selecting it.
+- Merge duplicate, adjacent, and overlapping selections from the same file.
+- Keep project-relative file paths, language names, and line ranges.
+- Inspect, copy, remove, or clear collected context items.
+- Build a Markdown prompt for an external coding agent.
+- Copy raw IDE context without extra instructions.
+- Run a context readiness check through an OpenAI-compatible API.
+- Use a mock AI client when no API key is configured.
 
-## Features
+## How To Use
 
-- Add focused code snippets from the editor popup
-- Add the current file from the editor popup without manually selecting it
-- Automatically merge overlapping, adjacent, or duplicate selections from the same file
-- Inspect collected context in a compact master-detail UI
-- Copy or remove the selected context item
-- Preserve relative file path, language, and selected line range
-- Write a user task directly in the Tool Window
-- Copy a full Markdown prompt for an external AI coding agent
-- Copy raw IDE context without extra instructions
-- Run an AI-powered Context Readiness Check
-- Configure OpenAI-compatible access in IDE Settings
-- Fall back to a mock AI client when API settings are missing
+1. Select code in the editor, or open a file you want to add completely.
+2. Right-click in the editor.
+3. Choose **Add Selection to AI Context** or **Add Current File to AI Context**.
+4. Open the **AI Context** Tool Window.
+5. Review the collected snippets and enter the task.
+6. Use **Copy Prompt**, **Copy Raw Context**, or **Check Context Readiness**.
 
-## How It Works
-
-1. Select code in the editor, or place the caret in a file you want to add completely.
-2. Right-click and choose **Add Selection to AI Context** or **Add Current File to AI Context**.
-3. Open the **AI Context** Tool Window.
-4. Review the compact context list and selected item details.
-5. Enter the task for the AI agent.
-6. Click **Check Context Readiness** to estimate whether the context is enough.
-7. Click **Copy Prompt** and paste it into your preferred AI coding assistant.
-
-## AI Context Readiness Check
-
-The readiness check sends only:
-
-- the user task;
-- the selected context snippets;
-- a project outline containing file paths only.
-
-It does not send full project contents. Selected snippets and project outline entries use project-relative paths where possible, avoiding local absolute paths in prompts. Missing context suggestions are candidates based on selected snippets, project file paths, and the user task.
-
-## Configuration
+## AI Configuration
 
 Open:
 
@@ -51,15 +33,15 @@ Open:
 Settings / Preferences -> Tools -> AI Context Builder
 ```
 
-Available fields:
+Available settings:
 
-- **Provider**: OpenAI-compatible
-- **Base URL**: defaults to `https://api.openai.com`
-- **Model**: defaults to `gpt-4.1-mini`
-- **API Key**: stored through IntelliJ PasswordSafe, not in the normal persistent settings file
-- **Use mock AI client only**: useful for demos and offline testing
+- **Provider**: OpenAI-compatible.
+- **Base URL**: defaults to `https://api.openai.com`.
+- **Model**: defaults to `gpt-4.1-mini`.
+- **API Key**: stored through IntelliJ PasswordSafe.
+- **Use mock AI client only**: forces offline mock responses.
 
-If no API key is configured in Settings, the plugin falls back to the mock AI client. Environment variables remain as a compatibility fallback:
+If no API key is configured in Settings, the plugin falls back to a mock readiness response. Environment variables are supported as a fallback:
 
 ```text
 OPENAI_API_KEY
@@ -69,27 +51,44 @@ OPENAI_MODEL
 
 Settings values take precedence over environment variables.
 
+## Data Sent To AI
+
+The readiness check sends only:
+
+- the user task;
+- selected context snippets;
+- a project outline containing file paths only.
+
+It does not send full project contents. Project paths are formatted relative to the project root when possible.
+
+Unit tests do not call any real AI API and do not require an API key.
+
 ## Architecture
 
-Editor Action -> Context Storage Service -> Merge Decider -> Prompt Builder -> Tool Window -> Clipboard
+The implementation is split into small layers:
 
-Readiness Check Runner -> Project Outline Provider -> Readiness Prompt Builder -> AI Client -> Result Panel
+- `actions`: editor popup actions and conversion from editor selection to context items.
+- `context`: in-memory context storage and merge rules.
+- `project`: project outline collection and path filtering.
+- `prompt`: Markdown prompt generation.
+- `readiness`: readiness prompt construction and AI check orchestration.
+- `ai`: OpenAI-compatible client, mock client, and testable HTTP transport abstraction.
+- `settings`: persistent settings and PasswordSafe API key storage.
+- `ui`: Swing Tool Window UI.
 
-Project Outline Provider uses the IntelliJ project model and VFS through `ProjectRootManager.fileIndex.iterateContent`, so excluded roots and project content are respected by the IDE. A small filesystem collector is kept as a fallback and as a testable component.
+High-level flow:
 
-Settings -> Persistent State Service -> PasswordSafe API Key Store -> AI Client Factory
+```text
+Editor Action -> Context Storage -> Prompt Builder -> Tool Window -> Clipboard
 
-AI Client -> OpenAI-compatible Chat Completions request/response DTOs -> Gson serialization
+Readiness Check -> Project Outline -> Readiness Prompt -> AI Client -> Result Panel
+```
 
-## Current Limitations
+## Limitations
 
-- Context is stored only in memory.
-- The plugin does not send full project contents to the AI.
-- Missing context suggestions are candidate suggestions based on selected snippets, project file paths, and the user task.
-- The plugin does not edit source code.
-- The plugin is not a full AI chat assistant.
-- No PSI-based symbol extraction yet.
-- No Git diff support yet.
+- Context is stored in memory only.
+- The plugin does not edit source files.
+- Project outline suggestions are based on file paths, not full file contents.
 
 ## Development
 
@@ -105,15 +104,10 @@ Run the standard Gradle check:
 ./gradlew check
 ```
 
-Run IntelliJ plugin verification before sharing a release build:
+Run IntelliJ plugin verification:
 
 ```text
 ./gradlew verifyPlugin
 ```
 
-## Future Ideas
-
-- Add suggested files directly from readiness results
-- Add PSI-derived symbol names to context items
-- Add AI review for generated diffs
-- Add test failure / stacktrace triage
+GitHub Actions runs `./gradlew test` on pushes and pull requests.

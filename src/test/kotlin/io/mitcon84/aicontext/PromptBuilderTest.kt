@@ -79,6 +79,19 @@ class PromptBuilderTest {
         assertTrue(itemContext.contains("fun main()"))
     }
 
+    @Test
+    fun `preserves leading indentation in selected code`() {
+        val prompt = builder.build(
+            listOf(
+                sampleItem().copy(
+                    selectedText = "    println(\"indented\")\n        println(\"nested\")"
+                )
+            )
+        )
+
+        assertTrue(prompt.contains("```text\n    println(\"indented\")\n        println(\"nested\")\n```"))
+    }
+
     private fun sampleItem(): ContextItem =
         sampleItem(startLine = 10, endLine = 16)
 

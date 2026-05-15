@@ -115,6 +115,21 @@ class ReadinessPromptBuilderTest {
         assertFalse(prompt.contains("- Lines:"))
     }
 
+    @Test
+    fun `preserves leading indentation in selected context code`() {
+        val prompt = builder.build(
+            userTask = "Check indentation.",
+            contextItems = listOf(
+                sampleItem().copy(
+                    selectedText = "    fun nested() {\n        println(\"kept\")\n    }"
+                )
+            ),
+            projectOutline = sampleOutline()
+        )
+
+        assertTrue(prompt.contains("```text\n    fun nested() {\n        println(\"kept\")\n    }\n```"))
+    }
+
     private fun sampleItem(startLine: Int? = 12, endLine: Int? = 24): ContextItem =
         ContextItem(
             projectName = "DemoProject",

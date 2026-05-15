@@ -30,6 +30,9 @@ class ProjectFileCollector {
                     if (collected.size < maxFiles) {
                         collected.add(toRelativePath(basePath, file))
                     }
+                    if (matchingFiles > maxFiles) {
+                        return FileVisitResult.TERMINATE
+                    }
                 }
                 return FileVisitResult.CONTINUE
             }
