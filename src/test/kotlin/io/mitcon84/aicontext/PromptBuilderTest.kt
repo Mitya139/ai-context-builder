@@ -69,6 +69,16 @@ class PromptBuilderTest {
         assertFalse(rawContext.contains("## Instructions"))
     }
 
+    @Test
+    fun `builds single context item with selected code`() {
+        val itemContext = builder.buildItemContext(sampleItem())
+
+        assertTrue(itemContext.contains("## Context Item"))
+        assertTrue(itemContext.contains("- File: `src/main/kotlin/App.kt`"))
+        assertTrue(itemContext.contains("- Lines: `10-16`"))
+        assertTrue(itemContext.contains("fun main()"))
+    }
+
     private fun sampleItem(): ContextItem =
         sampleItem(startLine = 10, endLine = 16)
 

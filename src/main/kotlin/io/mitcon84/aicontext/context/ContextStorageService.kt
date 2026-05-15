@@ -36,6 +36,18 @@ class ContextStorageService(private val project: Project) {
         return removedItem
     }
 
+    fun removeItem(id: String, statusMessage: String? = null): ContextItem? {
+        val index = items.indexOfFirst { it.id == id }
+        if (index < 0) {
+            return null
+        }
+
+        val removedItem = items.removeAt(index)
+        this.statusMessage = statusMessage
+        notifyChanged()
+        return removedItem
+    }
+
     fun addChangeListener(listener: () -> Unit) {
         if (!listeners.contains(listener)) {
             listeners.add(listener)

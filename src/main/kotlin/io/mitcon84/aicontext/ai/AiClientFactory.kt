@@ -1,0 +1,29 @@
+package io.mitcon84.aicontext.ai
+
+class AiClientFactory {
+    fun createFromEnvironment(): AiClientSelection {
+        val apiKey = System.getenv("OPENAI_API_KEY")
+        if (apiKey.isNullOrBlank()) {
+            return AiClientSelection(
+                client = MockAiClient(),
+                statusMessage = "OPENAI_API_KEY is not configured. Using mock readiness response."
+            )
+        }
+
+        return AiClientSelection(
+            client = OpenAiCompatibleClient(
+                apiKey = apiKey,
+                baseUrl = System.getenv("OPENAI_BASE_URL")?.takeIf { it.isNotBlank() }
+                    ?: OpenAiCompatibleClient.DEFAULT_BASE_URL,
+                model = System.getenv("OPENAI_MODEL")?.takeIf { it.isNotBlank() }
+                    ?: OpenAiCompatibleClient.DEFAULT_MODEL
+            ),
+            statusMessage = null
+        )
+    }
+}
+
+data class AiClientSelection(
+    val client: AiClient,
+    val statusMessage: String?
+)

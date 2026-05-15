@@ -77,6 +77,21 @@ class PromptBuilder {
         }
     }
 
+    fun buildItemContext(item: ContextItem): String {
+        return buildString {
+            appendLine("## Context Item")
+            appendLine()
+            appendLine("- Project: `${item.projectName}`")
+            appendLine("- File: `${item.filePath}`")
+            lineRange(item)?.let { appendLine("- Lines: `$it`") }
+            appendLine("- Language: `${item.language}`")
+            appendLine()
+            appendLine("```text")
+            appendLine(item.selectedText.trim())
+            appendLine("```")
+        }
+    }
+
     private fun lineRange(item: ContextItem): String? {
         val startLine = item.startLine ?: return null
         val endLine = item.endLine ?: return null
