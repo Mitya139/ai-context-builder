@@ -111,3 +111,9 @@ Run IntelliJ plugin verification:
 ```
 
 GitHub Actions runs `./gradlew test` on pushes and pull requests.
+
+## Demo
+<img width="1920" height="1018" alt="Screen-Recording-2026-05-15-230440" src="https://github.com/user-attachments/assets/a17abaa7-f3bc-40a4-ba82-4ab624e251c9" />
+
+
+
