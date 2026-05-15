@@ -8,6 +8,7 @@ plugins {
 
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
+    implementation(libs.gson)
     testImplementation(libs.junit)
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
@@ -17,5 +18,13 @@ dependencies {
 
         // Add plugin dependencies for compilation here, for example:
         // bundledPlugin("com.intellij.java")
+    }
+}
+
+intellijPlatform {
+    pluginVerification {
+        ides {
+            current()
+        }
     }
 }

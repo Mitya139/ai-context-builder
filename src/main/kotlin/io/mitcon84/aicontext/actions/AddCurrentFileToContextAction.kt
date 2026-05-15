@@ -6,15 +6,15 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
 import io.mitcon84.aicontext.context.ContextStorageService
 
-class AddSelectionToContextAction : AnAction() {
+class AddCurrentFileToContextAction : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project ?: return
         val editor = event.getData(CommonDataKeys.EDITOR) ?: return
         val virtualFile = event.getData(CommonDataKeys.VIRTUAL_FILE)
 
-        val item = EditorContextItemFactory.fromSelection(project, editor, virtualFile)
+        val item = EditorContextItemFactory.fromWholeFile(project, editor, virtualFile)
         if (item == null) {
-            Messages.showInfoMessage(project, "Please select code before adding it to AI context.", "AI Context")
+            Messages.showInfoMessage(project, "Current file is empty.", "AI Context")
             return
         }
 

@@ -18,7 +18,7 @@ class ProjectFileCollector {
 
         Files.walkFileTree(basePath, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-                if (dir != basePath && dir.fileName.toString() in ignoredDirectories) {
+                if (dir != basePath && ProjectOutlineFileFilter.shouldSkipDirectory(dir.fileName.toString())) {
                     return FileVisitResult.SKIP_SUBTREE
                 }
                 return FileVisitResult.CONTINUE
@@ -43,18 +43,7 @@ class ProjectFileCollector {
 
     private fun shouldInclude(basePath: Path, file: Path): Boolean {
         val relative = file.relativeTo(basePath)
-        val segments = relative.map { it.fileName.toString() }.toList()
-        if (segments.any { it in ignoredDirectories }) {
-            return false
-        }
-
-        val fileName = file.fileName.toString()
-        if (ignoredExtensions.any { fileName.endsWith(it, ignoreCase = true) }) {
-            return false
-        }
-
-        val normalized = toRelativePath(basePath, file)
-        return includedExtensions.any { normalized.endsWith(it, ignoreCase = true) }
+        return ProjectOutlineFileFilter.shouldIncludePath(relative.joinToString("/"))
     }
 
     private fun toRelativePath(basePath: Path, file: Path): String =
@@ -65,43 +54,4 @@ class ProjectFileCollector {
         val truncated: Boolean
     )
 
-    private companion object {
-        val ignoredDirectories = setOf(
-            ".git",
-            ".gradle",
-            ".idea",
-            "build",
-            "out",
-            "target",
-            "node_modules",
-            "dist",
-            ".intellijPlatform"
-        )
-
-        val includedExtensions = listOf(
-            ".kt",
-            ".java",
-            ".xml",
-            ".kts",
-            ".gradle",
-            ".properties",
-            ".md",
-            ".json",
-            ".yml",
-            ".yaml",
-            ".toml"
-        )
-
-        val ignoredExtensions = listOf(
-            ".class",
-            ".jar",
-            ".zip",
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".gif",
-            ".svg",
-            ".ico"
-        )
-    }
 }

@@ -41,6 +41,13 @@
                 description="Add selected code to AI coding agent context">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
+        <action
+                id="io.mitcon84.aicontext.addCurrentFileToContext"
+                class="io.mitcon84.aicontext.actions.AddCurrentFileToContextAction"
+                text="Add Current File to AI Context"
+                description="Add the current file to AI coding agent context">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
     </actions>
 
 </idea-plugin>

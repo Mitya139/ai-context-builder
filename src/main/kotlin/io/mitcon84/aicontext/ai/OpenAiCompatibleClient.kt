@@ -1,130 +1,68 @@
 package io.mitcon84.aicontext.ai
 
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.time.Duration
 
-class OpenAiCompatibleClient(
+internal class OpenAiCompatibleClient(
     private val apiKey: String,
     private val baseUrl: String = DEFAULT_BASE_URL,
     private val model: String = DEFAULT_MODEL,
-    private val httpClient: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(20))
-        .build()
+    private val gson: Gson = Gson(),
+    private val transport: AiHttpTransport = JdkAiHttpTransport()
 ) : AiClient {
     override fun complete(prompt: String): String {
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create("${baseUrl.trimEnd('/')}/v1/chat/completions"))
-            .timeout(Duration.ofSeconds(60))
-            .header("Authorization", "Bearer $apiKey")
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(buildRequestBody(prompt)))
-            .build()
+        val requestBody = buildRequestBody(prompt)
 
         val response = try {
-            httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+            transport.postJson(
+                uri = URI.create("${baseUrl.trimEnd('/')}/v1/chat/completions"),
+                apiKey = apiKey,
+                body = requestBody,
+                timeout = Duration.ofSeconds(60)
+            )
         } catch (exception: Exception) {
             throw AiClientException("Network error while running AI readiness check: ${exception.message}", exception)
         }
 
-        if (response.statusCode() !in 200..299) {
-            throw AiClientException("HTTP ${response.statusCode()} from AI provider. Check OPENAI_API_KEY and OPENAI_BASE_URL.")
+        if (response.statusCode !in 200..299) {
+            throw AiClientException("HTTP ${response.statusCode} from AI provider. Check OPENAI_API_KEY and OPENAI_BASE_URL.")
         }
 
-        return extractContent(response.body())
+        return parseContent(response.body)
             ?: throw AiClientException("AI provider returned an invalid or empty response.")
     }
 
     private fun buildRequestBody(prompt: String): String {
-        return """
-            {
-              "model": "${escapeJson(model)}",
-              "messages": [
-                {
-                  "role": "system",
-                  "content": "You evaluate IDE context quality for coding tasks. Return concise Markdown only."
-                },
-                {
-                  "role": "user",
-                  "content": "${escapeJson(prompt)}"
-                }
-              ],
-              "temperature": 0.2
-            }
-        """.trimIndent()
+        return gson.toJson(
+            ChatCompletionRequest(
+                model = model,
+                messages = listOf(
+                    ChatMessage(
+                        role = "system",
+                        content = "You evaluate IDE context quality for coding tasks. Return concise Markdown only."
+                    ),
+                    ChatMessage(
+                        role = "user",
+                        content = prompt
+                    )
+                ),
+                temperature = 0.2
+            )
+        )
     }
 
-    private fun extractContent(json: String): String? {
-        val keyIndex = json.indexOf("\"content\"")
-        if (keyIndex < 0) {
-            return null
+    private fun parseContent(json: String): String? {
+        val response = try {
+            gson.fromJson(json, ChatCompletionResponse::class.java)
+        } catch (exception: JsonSyntaxException) {
+            throw AiClientException("AI provider returned malformed JSON.", exception)
         }
-
-        val colonIndex = json.indexOf(':', keyIndex)
-        if (colonIndex < 0) {
-            return null
-        }
-
-        val startQuote = json.indexOf('"', colonIndex + 1)
-        if (startQuote < 0) {
-            return null
-        }
-
-        val result = StringBuilder()
-        var index = startQuote + 1
-        var escaping = false
-        while (index < json.length) {
-            val char = json[index]
-            if (escaping) {
-                when (char) {
-                    '"' -> result.append('"')
-                    '\\' -> result.append('\\')
-                    '/' -> result.append('/')
-                    'b' -> result.append('\b')
-                    'f' -> result.append('\u000C')
-                    'n' -> result.append('\n')
-                    'r' -> result.append('\r')
-                    't' -> result.append('\t')
-                    'u' -> {
-                        val hex = json.substring(index + 1, (index + 5).coerceAtMost(json.length))
-                        if (hex.length == 4) {
-                            result.append(hex.toInt(16).toChar())
-                            index += 4
-                        }
-                    }
-                    else -> result.append(char)
-                }
-                escaping = false
-            } else if (char == '\\') {
-                escaping = true
-            } else if (char == '"') {
-                return result.toString().takeIf { it.isNotBlank() }
-            } else {
-                result.append(char)
-            }
-            index++
-        }
-
-        return null
-    }
-
-    private fun escapeJson(value: String): String {
-        return buildString {
-            value.forEach { char ->
-                when (char) {
-                    '"' -> append("\\\"")
-                    '\\' -> append("\\\\")
-                    '\b' -> append("\\b")
-                    '\u000C' -> append("\\f")
-                    '\n' -> append("\\n")
-                    '\r' -> append("\\r")
-                    '\t' -> append("\\t")
-                    else -> append(char)
-                }
-            }
-        }
+        return response.choices.orEmpty()
+            .asSequence()
+            .mapNotNull { it.message?.content?.takeIf(String::isNotBlank) }
+            .firstOrNull()
     }
 
     companion object {
@@ -132,3 +70,26 @@ class OpenAiCompatibleClient(
         const val DEFAULT_MODEL = "gpt-4.1-mini"
     }
 }
+
+private data class ChatCompletionRequest(
+    val model: String,
+    val messages: List<ChatMessage>,
+    val temperature: Double
+)
+
+private data class ChatMessage(
+    val role: String,
+    val content: String
+)
+
+private data class ChatCompletionResponse(
+    val choices: List<ChatChoice>? = null
+)
+
+private data class ChatChoice(
+    val message: ChatResponseMessage? = null
+)
+
+private data class ChatResponseMessage(
+    val content: String? = null
+)

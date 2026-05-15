@@ -3,13 +3,11 @@ package io.mitcon84.aicontext.ui
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
-import io.mitcon84.aicontext.ai.AiClientException
-import io.mitcon84.aicontext.ai.AiClientFactory
 import io.mitcon84.aicontext.context.ContextItem
 import io.mitcon84.aicontext.context.ContextStorageService
-import io.mitcon84.aicontext.project.ProjectOutlineProvider
 import io.mitcon84.aicontext.prompt.PromptBuilder
-import io.mitcon84.aicontext.readiness.ReadinessPromptBuilder
+import io.mitcon84.aicontext.readiness.ReadinessCheckResult
+import io.mitcon84.aicontext.readiness.ReadinessCheckRunner
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import java.awt.datatransfer.StringSelection
@@ -26,9 +24,7 @@ import javax.swing.SwingUtilities
 class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     private val storage = ContextStorageService.getInstance(project)
     private val promptBuilder = PromptBuilder()
-    private val readinessPromptBuilder = ReadinessPromptBuilder()
-    private val projectOutlineProvider = ProjectOutlineProvider()
-    private val aiClientFactory = AiClientFactory()
+    private val readinessCheckRunner = ReadinessCheckRunner()
 
     private val userTaskArea = JTextArea(3, 40).apply {
         lineWrap = true
@@ -159,36 +155,13 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
         readinessResultPanel.setLoading("Checking context readiness...")
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            val result = runCatching {
-                val outline = projectOutlineProvider.collect(project)
-                val prompt = readinessPromptBuilder.build(userTask, items, outline)
-                val clientSelection = aiClientFactory.createFromSettings()
-                val report = clientSelection.client.complete(prompt)
-                ReadinessResult(
-                    report = if (clientSelection.statusMessage == null) {
-                        report
-                    } else {
-                        "${clientSelection.statusMessage}\n\n$report"
-                    },
-                    error = null
-                )
-            }.getOrElse { error ->
-                ReadinessResult(
-                    report = null,
-                    error = if (error is AiClientException) {
-                        "AI readiness check failed: ${error.message}"
-                    } else {
-                        "AI readiness check failed: ${error.message ?: error::class.java.simpleName}"
-                    }
-                )
-            }
+            val result = readinessCheckRunner.check(project, userTask, items)
 
             ApplicationManager.getApplication().invokeLater {
                 checkReadinessButton.isEnabled = true
-                if (result.error != null) {
-                    readinessResultPanel.setError(result.error)
-                } else {
-                    readinessResultPanel.setResult(result.report.orEmpty())
+                when (result) {
+                    is ReadinessCheckResult.Failure -> readinessResultPanel.setError(result.message)
+                    is ReadinessCheckResult.Success -> readinessResultPanel.setResult(result.report)
                 }
             }
         }
@@ -204,9 +177,4 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     private fun approxTokens(chars: Int): Int = if (chars == 0) 0 else (chars + 3) / 4
 
     private fun formatNumber(value: Int): String = String.format(Locale.US, "%,d", value)
-
-    private data class ReadinessResult(
-        val report: String?,
-        val error: String?
-    )
 }

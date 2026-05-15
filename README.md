@@ -11,10 +11,11 @@ AI coding agents often fail because the prompt has the wrong context: too little
 ## Features
 
 - Add focused code snippets from the editor popup
+- Add the current file from the editor popup without manually selecting it
 - Automatically merge overlapping, adjacent, or duplicate selections from the same file
 - Inspect collected context in a compact master-detail UI
 - Copy or remove the selected context item
-- Preserve file path, language, and selected line range
+- Preserve relative file path, language, and selected line range
 - Write a user task directly in the Tool Window
 - Copy a full Markdown prompt for an external AI coding agent
 - Copy raw IDE context without extra instructions
@@ -24,8 +25,8 @@ AI coding agents often fail because the prompt has the wrong context: too little
 
 ## How It Works
 
-1. Select code in the editor.
-2. Right-click and choose **Add Selection to AI Context**.
+1. Select code in the editor, or place the caret in a file you want to add completely.
+2. Right-click and choose **Add Selection to AI Context** or **Add Current File to AI Context**.
 3. Open the **AI Context** Tool Window.
 4. Review the compact context list and selected item details.
 5. Enter the task for the AI agent.
@@ -40,7 +41,7 @@ The readiness check sends only:
 - the selected context snippets;
 - a project outline containing file paths only.
 
-It does not send full project contents. Missing context suggestions are candidates based on selected snippets, project file paths, and the user task.
+It does not send full project contents. Selected snippets and project outline entries use project-relative paths where possible, avoiding local absolute paths in prompts. Missing context suggestions are candidates based on selected snippets, project file paths, and the user task.
 
 ## Configuration
 
@@ -72,9 +73,13 @@ Settings values take precedence over environment variables.
 
 Editor Action -> Context Storage Service -> Merge Decider -> Prompt Builder -> Tool Window -> Clipboard
 
-Readiness Check -> Project Outline Provider -> Readiness Prompt Builder -> AI Client -> Result Panel
+Readiness Check Runner -> Project Outline Provider -> Readiness Prompt Builder -> AI Client -> Result Panel
+
+Project Outline Provider uses the IntelliJ project model and VFS through `ProjectRootManager.fileIndex.iterateContent`, so excluded roots and project content are respected by the IDE. A small filesystem collector is kept as a fallback and as a testable component.
 
 Settings -> Persistent State Service -> PasswordSafe API Key Store -> AI Client Factory
+
+AI Client -> OpenAI-compatible Chat Completions request/response DTOs -> Gson serialization
 
 ## Current Limitations
 
@@ -85,6 +90,26 @@ Settings -> Persistent State Service -> PasswordSafe API Key Store -> AI Client 
 - The plugin is not a full AI chat assistant.
 - No PSI-based symbol extraction yet.
 - No Git diff support yet.
+
+## Development
+
+Run tests:
+
+```text
+./gradlew test
+```
+
+Run the standard Gradle check:
+
+```text
+./gradlew check
+```
+
+Run IntelliJ plugin verification before sharing a release build:
+
+```text
+./gradlew verifyPlugin
+```
 
 ## Future Ideas
 

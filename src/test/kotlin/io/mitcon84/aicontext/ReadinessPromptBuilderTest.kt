@@ -70,6 +70,19 @@ class ReadinessPromptBuilderTest {
     }
 
     @Test
+    fun `forbids invented candidate file paths`() {
+        val prompt = builder.build(
+            userTask = "Create a similar test.",
+            contextItems = listOf(sampleItem()),
+            projectOutline = sampleOutline()
+        )
+
+        assertTrue(prompt.contains("Do not invent file paths"))
+        assertTrue(prompt.contains("only exact file paths copied from the Project Outline"))
+        assertTrue(prompt.contains("No known candidate files found in the provided project outline."))
+    }
+
+    @Test
     fun `handles empty context item list`() {
         val prompt = builder.build(
             userTask = "Improve prompt formatting.",
