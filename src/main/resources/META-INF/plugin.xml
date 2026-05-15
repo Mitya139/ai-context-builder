@@ -5,16 +5,15 @@
 
     <!-- Public plugin name should be written in Title Case.
      Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
-    <name>Ai-context-builder</name>
+    <name>AI Context Builder</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor url="https://www.yourcompany.com">YourCompany</vendor>
+    <vendor>mitcon84</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
     <description><![CDATA[
-        Enter short description for your plugin here.<br>
-        <em>most HTML tags may be used</em>
+        AI Context Builder helps developers collect selected IDE context and turn it into a clean Markdown prompt for external AI coding agents.
         ]]></description>
 
     <!-- Product and plugin compatibility requirements.
@@ -25,6 +24,20 @@
     <!-- Extensions defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+        <toolWindow
+                id="AI Context"
+                anchor="right"
+                factoryClass="io.mitcon84.aicontext.ui.AiContextToolWindowFactory"/>
     </extensions>
+
+    <actions>
+        <action
+                id="io.mitcon84.aicontext.actions.AddSelectionToContextAction"
+                class="io.mitcon84.aicontext.actions.AddSelectionToContextAction"
+                text="Add Selection to AI Context"
+                description="Add selected code to AI coding agent context">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 
 </idea-plugin>
