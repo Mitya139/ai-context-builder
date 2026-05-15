@@ -14,6 +14,7 @@ import io.mitcon84.aicontext.readiness.ReadinessCheckResult
 import io.mitcon84.aicontext.readiness.ReadinessCheckRunner
 import java.awt.BorderLayout
 import java.awt.FlowLayout
+import java.awt.GridLayout
 import java.awt.datatransfer.StringSelection
 import java.util.Locale
 import javax.swing.BorderFactory
@@ -46,27 +47,15 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     )
     private val readinessResultPanel = ReadinessResultPanel()
     private val storageListener: () -> Unit = {
-        SwingUtilities.invokeLater { refresh() }
+        SwingUtilities.invokeLater {
+            if (!project.isDisposed && isDisplayable) {
+                refresh()
+            }
+        }
     }
 
     init {
-        val actionPanel = JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-            add(checkReadinessButton.apply {
-                addActionListener { checkContextReadiness() }
-            })
-            add(JButton("Copy Prompt").apply {
-                addActionListener { copyPrompt() }
-            })
-            add(JButton("Copy Raw Context").apply {
-                addActionListener { copyRawContext() }
-            })
-            add(JButton("Clear").apply {
-                addActionListener { clearContext() }
-            })
-            add(JButton("Refresh").apply {
-                addActionListener { refresh() }
-            })
-        }
+        val actionPanel = createActionPanel()
 
         val topPanel = JPanel(BorderLayout()).apply {
             add(JScrollPane(userTaskArea).apply {
@@ -108,6 +97,7 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
     override fun addNotify() {
         super.addNotify()
         storage.addChangeListener(storageListener)
+        refresh()
     }
 
     override fun removeNotify() {
@@ -120,6 +110,33 @@ class AiContextPanel(private val project: Project) : JPanel(BorderLayout()) {
         summaryLabel.text = buildSummary(items, statusMessage)
         contextListPanel.render(items)
     }
+
+    private fun createActionPanel(): JPanel =
+        JPanel(GridLayout(0, 1)).apply {
+            add(
+                JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
+                    add(checkReadinessButton.apply {
+                        addActionListener { checkContextReadiness() }
+                    })
+                    add(JButton("Copy Prompt").apply {
+                        addActionListener { copyPrompt() }
+                    })
+                }
+            )
+            add(
+                JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
+                    add(JButton("Copy Raw Context").apply {
+                        addActionListener { copyRawContext() }
+                    })
+                    add(JButton("Clear").apply {
+                        addActionListener { clearContext() }
+                    })
+                    add(JButton("Refresh").apply {
+                        addActionListener { refresh() }
+                    })
+                }
+            )
+        }
 
     private fun copyPrompt() {
         val prompt = promptBuilder.build(storage.getItems(), userTaskArea.text)
